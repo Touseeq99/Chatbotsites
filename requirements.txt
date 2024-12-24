@@ -4,3 +4,4 @@ groq
 langchain-community
 langchain-groq
 langchain-groq
+gunicorn
