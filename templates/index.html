@@ -60,7 +60,10 @@
             cursor: pointer;
         }
         .chat-header button::before {
-            content: '🌙'; /* Dark mode icon */
+            content: '🌙'; /* Light mode icon */
+        }
+        .dark-mode .chat-header button::before {
+            content: '☀️'; /* Dark mode icon */
         }
         .chat-header p {
             margin: 0.5em 0 0;
@@ -92,6 +95,9 @@
             font-size: 1.5em; /* Icon size */
             color: white;
             margin-right: 10px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
         .message-content {
             max-width: 80%;
@@ -126,6 +132,11 @@
         .dark-mode .bot-message .message-content {
             background-color: #555;
             color: #f4f4f9;
+        }
+        .bot-message .avatar {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
         .chat-input {
             display: flex;
@@ -226,7 +237,8 @@
         toggleThemeButton.addEventListener('click', () => {
             isDarkMode = !isDarkMode;
             document.body.classList.toggle('dark-mode', isDarkMode);
-            toggleThemeButton.classList.toggle('dark-mode'); // Ensure button syncs with theme
+            toggleThemeButton.classList.toggle('dark-mode'); 
+            toggleThemeButton.querySelector('::before').textContent = isDarkMode ? '☀️' : '🌙';
         });
 
         const addMessage = (message, type) => {
@@ -235,15 +247,15 @@
 
             const avatar = document.createElement('div');
             avatar.classList.add('avatar');
-            avatar.textContent = type === 'bot' ? '🤖' : '👤'; // Bot icon or user icon
+            if (type === 'bot') {
+                avatar.style.backgroundImage = "url('/static/images/AgentDoge.ico')";
+            } else {
+                avatar.innerHTML = '👤'; // Fallback for user avatars
+            }
 
             const content = document.createElement('div');
             content.classList.add('message-content');
-            if (type === 'user') {
-                content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Add timestamp for user messages
-            } else {
-                content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Bot messages
-            }
+            content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             content.innerHTML = type === 'bot' ? marked.parse(message) : message;
 
             messageElement.appendChild(avatar);
@@ -253,8 +265,8 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
             if (type === 'user') {
-                displaySpinner(); // Show spinner when user sends a message
-                queryInput.disabled = true; // Disable input to prevent spamming
+                displaySpinner(); 
+                queryInput.disabled = true; 
             }
         };
 
@@ -269,40 +281,41 @@
             const spinner = document.querySelector('.bot-message:last-child .spinner');
             if (spinner) spinner.remove();
         };
+
         sendButton.addEventListener('click', async () => {
-    const query = queryInput.value.trim();
-    if (!query) return;
+            const query = queryInput.value.trim();
+            if (!query) return;
 
-    addMessage(query, 'user');
-    queryInput.value = '';
-    queryInput.disabled = true; // Disable input initially
+            addMessage(query, 'user');
+            queryInput.value = '';
+            queryInput.disabled = true; 
 
-    try {
-        const response = await fetch('/query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `query=${encodeURIComponent(query)}`,
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `query=${encodeURIComponent(query)}`,
+                });
+
+                const data = await response.json();
+                removeSpinner(); 
+
+                if (data.result) {
+                    addMessage(data.result, 'bot');
+                } else {
+                    addMessage(`Error: ${data.error}`, 'bot');
+                }
+            } catch (error) {
+                removeSpinner();
+                addMessage('An error occurred while processing your request.', 'bot');
+            } finally {
+                queryInput.disabled = false; 
+                queryInput.focus(); 
+            }
         });
 
-        const data = await response.json();
-        removeSpinner(); // Remove spinner when response is received
-
-        if (data.result) {
-            addMessage(data.result, 'bot');
-        } else {
-            addMessage(`Error: ${data.error}`, 'bot');
-        }
-    } catch (error) {
-        removeSpinner();
-        addMessage('An error occurred while processing your request.', 'bot');
-    } finally {
-        queryInput.disabled = false; // Re-enable input regardless of success or failure
-        queryInput.focus(); // Focus back on the input field
-    }
-});
-        // Prevent new line for Enter key
         queryInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
