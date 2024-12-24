@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify,url_for, send_from_directory
 import os
 from langchain_community.tools import TavilySearchResults
 from langchain_groq import ChatGroq
@@ -10,6 +10,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
+app = Flask(__name__, static_url_path='/static')
+
+@app.route('/static/images/<filename>')
+def serve_image(filename):
+    return send_from_directory('static/images', filename)
 # Set up the API keys
 if not os.environ.get("TAVILY_API_KEY"):
     os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
@@ -65,4 +70,4 @@ def query():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0")
+    app.run(debug=True)
