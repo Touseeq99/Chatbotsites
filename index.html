@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Doge GPT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-mode {
+            background-color: #2c2c2c;
+            color: #f4f4f9;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 800px; /* Wider chat container */
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            transition: background-color 0.3s, color 0.3s;
+            margin: 0 auto; /* Center the container */
+        }
+        .dark-mode .chat-container {
+            background-color: #333;
+        }
+        .chat-header {
+            background-color: #4CAF50; /* Changed background to green */
+            color: white;
+            padding: 1em;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            position: relative;
+        }
+        .dark-mode .chat-header {
+            background-color: #388E3C; /* Dark green */
+        }
+        .chat-header button {
+            position: absolute;
+            right: 1em;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .chat-header button::before {
+            content: '🌙'; /* Dark mode icon */
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 1em;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            transition: background-color 0.3s;
+        }
+        .dark-mode .chat-messages {
+            background-color: #444;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin: 1em 0;
+        }
+        .message .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #FF5722; /* Human icon background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em; /* Icon size */
+            color: white;
+            margin-right: 10px;
+        }
+        .message-content {
+            max-width: 80%;
+            padding: 0.8em;
+            border-radius: 10px;
+            line-height: 1.4;
+            position: relative;
+        }
+        .message-content::after {
+            content: attr(data-timestamp);
+            display: block;
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        .user-message {
+            flex-direction: row-reverse;
+            gap: 10px; /* Adding space between user avatar and message content */
+        }
+        .user-message .avatar {
+            background-color: #81C784; /* User icon background */
+        }
+        .user-message .message-content {
+            background-color: #81C784; /* User message background */
+            color: white;
+            align-self: flex-end;
+        }
+        .bot-message .message-content {
+            background-color: #e2e2e2;
+            color: black;
+        }
+        .dark-mode .bot-message .message-content {
+            background-color: #555;
+            color: #f4f4f9;
+        }
+        .chat-input {
+            display: flex;
+            padding: 1em;
+            background-color: #fff;
+            border-top: 1px solid #ccc;
+            transition: background-color 0.3s, border-color 0.3s;
+            align-items: center;
+        }
+        .dark-mode .chat-input {
+            background-color: #333;
+            border-color: #555;
+        }
+        .chat-input textarea {
+            flex: 1;
+            resize: none;
+            padding: 0.5em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 0.5em;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .dark-mode .chat-input textarea {
+            background-color: #444;
+            color: #f4f4f9;
+            border-color: #555;
+        }
+        .chat-input button {
+            background-color: #4CAF50; /* Green button */
+            color: white;
+            border: none;
+            padding: 1em 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5em; /* Add spacing between icon and text */
+        }
+        .chat-input button:hover {
+            background-color: #388E3C;
+        }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: #007BFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Agent Doge GPT
+            <button id="toggleTheme"></button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <textarea id="query" placeholder="Type your message..."></textarea>
+            <button id="sendButton">
+                <span>Send</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const queryInput = document.getElementById('query');
+        const sendButton = document.getElementById('sendButton');
+        const toggleThemeButton = document.getElementById('toggleTheme');
+
+        let isDarkMode = false;
+
+        toggleThemeButton.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            toggleThemeButton.classList.toggle('dark-mode'); // Ensure button syncs with theme
+        });
+
+        const addMessage = (message, type) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', type === 'user' ? 'user-message' : 'bot-message');
+
+            const avatar = document.createElement('div');
+            avatar.classList.add('avatar');
+            avatar.textContent = type === 'bot' ? '🤖' : '👤'; // Bot icon or user icon
+
+            const content = document.createElement('div');
+            content.classList.add('message-content');
+            if (type === 'user') {
+                content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Add timestamp for user messages
+            } else {
+                content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Bot messages
+            }
+            content.innerHTML = type === 'bot' ? marked.parse(message) : message;
+
+            messageElement.appendChild(avatar);
+            messageElement.appendChild(content);
+
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (type === 'user') {
+                displaySpinner(); // Show spinner when user sends a message
+                queryInput.disabled = true; // Disable input to prevent spamming
+            }
+        };
+
+        const displaySpinner = () => {
+            const lastMessage = document.querySelector('.bot-message:last-child .message-content');
+            if (lastMessage) {
+                lastMessage.innerHTML += `<span class="spinner"></span>`;
+            }
+        };
+
+        const removeSpinner = () => {
+            const spinner = document.querySelector('.bot-message:last-child .spinner');
+            if (spinner) spinner.remove();
+        };
+        sendButton.addEventListener('click', async () => {
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    addMessage(query, 'user');
+    queryInput.value = '';
+    queryInput.disabled = true; // Disable input initially
+
+    try {
+        const response = await fetch('/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `query=${encodeURIComponent(query)}`,
+        });
+
+        const data = await response.json();
+        removeSpinner(); // Remove spinner when response is received
+
+        if (data.result) {
+            addMessage(data.result, 'bot');
+        } else {
+            addMessage(`Error: ${data.error}`, 'bot');
+        }
+    } catch (error) {
+        removeSpinner();
+        addMessage('An error occurred while processing your request.', 'bot');
+    } finally {
+        queryInput.disabled = false; // Re-enable input regardless of success or failure
+        queryInput.focus(); // Focus back on the input field
+    }
+});
+        // Prevent new line for Enter key
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendButton.click();
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>
