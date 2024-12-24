@@ -1,0 +1,6 @@
+flask-cors==4.0.0
+flask
+groq
+langchain-community
+langchain-groq
+langchain-groq
