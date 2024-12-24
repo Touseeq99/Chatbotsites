@@ -50,17 +50,21 @@
         }
         .chat-header button {
             position: absolute;
-            right: 1em;
-            top: 50%;
+            right: 0.6em;
+            top: 27%;
             transform: translateY(-50%);
             background: none;
             border: none;
             color: white;
-            font-size: 1.5em;
+            font-size: 1.8em; /* Smaller toggle icon */
             cursor: pointer;
         }
         .chat-header button::before {
             content: '🌙'; /* Dark mode icon */
+        }
+        .chat-header p {
+            margin: 0.5em 0 0;
+            font-size: 1em;
         }
         .chat-messages {
             flex: 1;
@@ -180,6 +184,19 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .chat-header {
+                font-size: 1.2em; /* Smaller header text for mobile */
+            }
+            .chat-header button {
+                font-size: 1em; /* Smaller toggle icon for mobile */
+            }
+            .chat-header p {
+                font-size: 0.9em; /* Smaller tagline text for mobile */
+            }
+        }
     </style>
 </head>
 <body>
@@ -187,6 +204,7 @@
         <div class="chat-header">
             Agent Doge GPT
             <button id="toggleTheme"></button>
+            <p>Ask Any Question About US Government Spending Waste</p>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input">
