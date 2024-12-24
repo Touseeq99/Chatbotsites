@@ -187,6 +187,15 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        .message-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #717472;
+    text-align: center;
+    height: 50vh; /* Adjust this as needed */
+}
+
         @keyframes spin {
             from {
                 transform: rotate(0deg);
@@ -215,9 +224,8 @@
         <div class="chat-header">
             Agent Doge GPT
             <button id="toggleTheme"></button>
-            <p>Ask Any Question About US Government Spending Waste</p>
         </div>
-        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-messages" id="chatMessages"> <div class="message-center"><h1 >Ask Any Question About US Government Spending Waste</h1></div></div>
         <div class="chat-input">
             <textarea id="query" placeholder="Type your message..."></textarea>
             <button id="sendButton">
@@ -227,101 +235,118 @@
     </div>
 
     <script>
-        const chatMessages = document.getElementById('chatMessages');
-        const queryInput = document.getElementById('query');
-        const sendButton = document.getElementById('sendButton');
-        const toggleThemeButton = document.getElementById('toggleTheme');
+       const chatMessages = document.getElementById('chatMessages');
+const queryInput = document.getElementById('query');
+const sendButton = document.getElementById('sendButton');
+const toggleThemeButton = document.getElementById('toggleTheme');
+const messageCenter = document.querySelector('.message-center');
 
-        let isDarkMode = false;
+let isDarkMode = false;
 
-        toggleThemeButton.addEventListener('click', () => {
-            isDarkMode = !isDarkMode;
-            document.body.classList.toggle('dark-mode', isDarkMode);
-            toggleThemeButton.classList.toggle('dark-mode'); 
-            toggleThemeButton.querySelector('::before').textContent = isDarkMode ? '☀️' : '🌙';
+toggleThemeButton.addEventListener('click', () => {
+    isDarkMode = !isDarkMode;
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    toggleThemeButton.classList.toggle('dark-mode'); 
+    toggleThemeButton.querySelector('::before').textContent = isDarkMode ? '☀️' : '🌙';
+});
+
+const addMessage = (message, type) => {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', type === 'user' ? 'user-message' : 'bot-message');
+
+    const avatar = document.createElement('div');
+    avatar.classList.add('avatar');
+    if (type === 'bot') {
+        avatar.style.backgroundImage = "url('/static/images/AgentDoge.ico')";
+    } else {
+        avatar.innerHTML = '👤'; // Fallback for user avatars
+    }
+
+    const content = document.createElement('div');
+    content.classList.add('message-content');
+    content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    content.innerHTML = type === 'bot' ? marked.parse(message) : message;
+
+    messageElement.appendChild(avatar);
+    messageElement.appendChild(content);
+
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    if (type === 'user') {
+        displaySpinner(); 
+        queryInput.disabled = true; 
+    }
+};
+
+const displaySpinner = () => {
+    const lastMessage = document.querySelector('.bot-message:last-child .message-content');
+    if (lastMessage) {
+        lastMessage.innerHTML += `<span class="spinner"></span>`;
+    }
+};
+
+const removeSpinner = () => {
+    const spinner = document.querySelector('.bot-message:last-child .spinner');
+    if (spinner) spinner.remove();
+};
+
+sendButton.addEventListener('click', async () => {
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    addMessage(query, 'user');
+    queryInput.value = '';
+    queryInput.disabled = true; 
+
+    try {
+        const response = await fetch('/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `query=${encodeURIComponent(query)}`,
         });
 
-        const addMessage = (message, type) => {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', type === 'user' ? 'user-message' : 'bot-message');
+        const data = await response.json();
+        removeSpinner(); 
 
-            const avatar = document.createElement('div');
-            avatar.classList.add('avatar');
-            if (type === 'bot') {
-                avatar.style.backgroundImage = "url('/static/images/AgentDoge.ico')";
-            } else {
-                avatar.innerHTML = '👤'; // Fallback for user avatars
-            }
+        if (data.result) {
+            addMessage(data.result, 'bot');
+        } else {
+            addMessage(`Error: ${data.error}`, 'bot');
+        }
+    } catch (error) {
+        removeSpinner();
+        addMessage('An error occurred while processing your request.', 'bot');
+    } finally {
+        queryInput.disabled = false; 
+        queryInput.focus(); 
+    }
+});
 
-            const content = document.createElement('div');
-            content.classList.add('message-content');
-            content.dataset.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            content.innerHTML = type === 'bot' ? marked.parse(message) : message;
+// Hide message-center if textarea has text or send button is clicked
+queryInput.addEventListener('input', () => {
+    if (queryInput.value.trim() !== '') {
+        messageCenter.style.display = 'none';
+    } else {
+        messageCenter.style.display = 'flex';
+    }
+});
 
-            messageElement.appendChild(avatar);
-            messageElement.appendChild(content);
+sendButton.addEventListener('click', () => {
+    if (queryInput.value.trim() !== '') {
+        messageCenter.style.display = 'none';
+    }
+});
 
-            chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+queryInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendButton.click();
+    }
+});
 
-            if (type === 'user') {
-                displaySpinner(); 
-                queryInput.disabled = true; 
-            }
-        };
-
-        const displaySpinner = () => {
-            const lastMessage = document.querySelector('.bot-message:last-child .message-content');
-            if (lastMessage) {
-                lastMessage.innerHTML += `<span class="spinner"></span>`;
-            }
-        };
-
-        const removeSpinner = () => {
-            const spinner = document.querySelector('.bot-message:last-child .spinner');
-            if (spinner) spinner.remove();
-        };
-
-        sendButton.addEventListener('click', async () => {
-            const query = queryInput.value.trim();
-            if (!query) return;
-
-            addMessage(query, 'user');
-            queryInput.value = '';
-            queryInput.disabled = true; 
-
-            try {
-                const response = await fetch('/query', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `query=${encodeURIComponent(query)}`,
-                });
-
-                const data = await response.json();
-                removeSpinner(); 
-
-                if (data.result) {
-                    addMessage(data.result, 'bot');
-                } else {
-                    addMessage(`Error: ${data.error}`, 'bot');
-                }
-            } catch (error) {
-                removeSpinner();
-                addMessage('An error occurred while processing your request.', 'bot');
-            } finally {
-                queryInput.disabled = false; 
-                queryInput.focus(); 
-            }
-        });
-
-        queryInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendButton.click();
-            }
-        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
